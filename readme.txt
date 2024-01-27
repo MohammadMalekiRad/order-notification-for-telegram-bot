@@ -1,14 +1,12 @@
 === اطلاع رسانی سفارشات ووکامرس توسط ربات تلگرام (بدون نیاز به پراکسی برای هاست های ایران) ===
 Contributors: Mohammad MalekiRad
-Tags: telegram, تلگرام, نوتیفیکیشن, notification, notif, ربات, bot, ربات تلگرام, اطلاع رسانی, ووکامرس, پیامک
-Requires at least: 5.2
-Tested up to: 5.9
-Stable tag: 1.5.1
-Requires PHP: 7.0
+Tags: telegram, تلگرام, نوتیفیکیشن, notification, notif, ربات, bot, ربات تلگرام, اطلاع رسانی, ووکامرس, پیامک, e-commerce, store, sales, sell, woo, shop, cart, checkout, downloadable, downloads, payments, paypal, storefront, stripe, woo commerce
+Stable tag: 1.7.0.1
 License: MIT
-WC requires at least: 3.2
-WC tested up to: 5.6
-License URI: https://opensource.org/licenses/MIT
+Requires at least: 6.0
+Tested up to: 6.4
+Requires PHP: 7.3
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 این افزونه با توسعه ووکامرس به شیوه ای بسیار کارآمد و بهینه به مدیران سایت کمک می کند تا هنگامی که سفارشی جدید، به راحتی و سرعت بالا از طریق یک ربات تلگرام از وضعیت سفارش های خود با خبر شوند. و دیگر وقت خود را صرف چک کردن بخش سفارش‌های سایت نکنید!
 
@@ -34,8 +32,8 @@ License URI: https://opensource.org/licenses/MIT
 کاهش اتلاف وقت برای چک کردن سفارش های جدید سایت&#x202b;
 
 ## نیازمندی ها
-* وردپرس نسخه 5.2.0 به بالا
-* ووکامرس نسخه 3.6.0 به بالا
+* وردپرس نسخه 6.0.0 به بالا
+* ووکامرس نسخه 6.0.0 به بالا
 
 ## نحوه استفاده
 ابتدا پلاگین را فعالسازی کرده و سپس در قسمت پیکربندی ووکامرس آن را پیکربندی کنید.
@@ -46,6 +44,22 @@ License URI: https://opensource.org/licenses/MIT
 2. &#x202b;سپس پلاگین را از قسمت افزونه های داشبورد خودتان فعال نمایید.
 
 == Changelog ==
+
+= 1.7.0 =
+* رفع ایرادات
+
+= 1.6.8 =
+* رفع برخی مشکلات
+
+= 1.6.7 =
+* امکان استفاده عدم استفاده از پراکسی در هاست های خارجی
+
+= 1.6.6 =
+* رفع مشکل شورت کدها
+
+= 1.6.5 =
+* امکان دریافت سفارشات از طریق پیامرسان بله
+* بهبود عملکرد افزونه
 
 = 1.5.1 =
 * افزودن تاریخ شمسی برای زمان ثبت سفارش ها

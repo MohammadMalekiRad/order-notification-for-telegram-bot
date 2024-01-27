@@ -2,7 +2,7 @@
 
 namespace OrderNotificationForTelegramBot\classes;
 
-abstract class ViSingleton {
+abstract class Singleton {
 
 	public static function getInstance() {
 

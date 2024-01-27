@@ -2,57 +2,70 @@
 
 namespace OrderNotificationForTelegramBot\classes;
 
-class Init extends ViSingleton {
-	public $telegram;
+class Init extends Singleton {
+
+	protected $requesterInstance;
 
 	function init() {
+		$this->defineMethods();
+		$this->checkForWooCommerce();
+	}
+
+	private function defineMethods() {
+		Methods::getInstance();
+	}
+
+	private function checkForWooCommerce() {
 		$active_plugins = apply_filters( 'active_plugins', get_option( 'active_plugins' ) );
 
 		if ( in_array( 'woocommerce/woocommerce.php', $active_plugins ) ) {
 			$this->run();
 		} else {
-			add_action( 'admin_notices', [ $this, 'showNotice' ] );
+			add_action( 'admin_notices', [ $this, 'showWooCammerceError' ] );
 		}
 	}
 
 	private function run() {
 		add_action( 'plugins_loaded', [ $this, 'loadHooks' ], 26 );
-		add_filter( 'plugin_action_links_OrderNotificationForTelegramBot/OrderNotifcationForTelegramBot.php', [ $this, 'add_action_links' ] );
+		add_filter( 'plugin_action_links_' . ONFTB_PLUGIN_BASE_NAME, [ $this, 'addActionLinks' ] );
 	}
 
-	function showNotice() {
+	function addActionLinks( $actions ) {
+		return array_merge( $actions, [ '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=onftb' ) . '">پیکربندی</a>' ] );
+	}
+
+	function showWooCammerceError() {
 		$class    = 'notice notice-error';
 		$message1 = __( 'افزونه <a href="https://wordpress.org/plugins/order-notification-for-telegram-bot">اطلاع رسانی سفارشات ووکامرس توسط ربات تلگرام</a> برای فعالیت های خود به افزونه ووکامرس نیازمند می باشد.' );
 		$message2 = __( 'لطفا از فعال بودن <a href="https://wordpress.org/plugins/woocommerce">ووکامرس</a> اطمینان حاصل فرمایید.' );
 		printf( '<div class="%1$s"><p>%2$s</p><p>%3$s</p></div>', esc_attr( $class ), ( $message1 ), ( $message2 ) );
 	}
 
-	function add_action_links( $actions ) {
-		return array_merge( $actions, [ '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=onftb' ) . '">پیکربندی</a>' ] );
-	}
-
-
 	function loadHooks() {
-		$this->initTelegramApi();
-		add_action( 'wp_ajax_onftb_send_test_message', [ $this, 'sendTestMessage' ] );
-		add_filter( 'woocommerce_get_settings_pages', array( $this, 'addWooSettingSection' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_script' ) );
 
-		$order_status_changed_enabled = get_option( 'onftb_send_after_order_status_changed', false );
-		if ( $order_status_changed_enabled == 'yes' ) {
+		$this->requesterInstance = Requester::getInstance();
+
+		add_action( 'wp_ajax_onftb_send_test_message', [ $this, 'sendTestMessage' ] );
+		//add WooCommerce setting section
+		add_filter( 'woocommerce_get_settings_pages', array( $this, 'addWooCammerceSettingSection' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'adminLoadJsScripts' ) );
+
+		$orderStatusChanged = get_option( 'onftb_send_after_order_status_changed', false );
+
+		if ( $orderStatusChanged == 'yes' ) {
 			add_action( 'woocommerce_order_status_changed', array( $this, 'woocommerce_order_status_changed' ), 20, 4 );
 		} else {
 			add_action( 'woocommerce_checkout_order_processed', array( $this, 'woocommerce_new_order' ) );
 		}
 	}
 
-	function admin_enqueue_script() {
+	function adminLoadJsScripts() {
 		wp_enqueue_script( 'onftb', plugin_dir_url( __FILE__ ) . '../assets/js/admin.js', array( 'jquery' ), false, true );
 	}
 
 	function sendTestMessage() {
 		try {
-			$this->telegram->sendMessage( self::getTemplate() );
+			$this->requesterInstance->request( self::getTemplate() );
 			echo json_encode( [ 'error' => 0, 'message' => __( 'پیام ارسال شد!' ) ] );
 			wp_die();
 		} catch ( \Exception $ex ) {
@@ -61,40 +74,14 @@ class Init extends ViSingleton {
 		}
 	}
 
-	private function initTelegramApi() {
-		$this->telegram         = new OrdersTelegramApi();
-		$this->telegram->chatID = get_option( 'onftb_setting_chatid' );
-		$this->telegram->token  = get_option( 'onftb_setting_token' );
-	}
-
 	public function sendNewOrderToTelegram( $orderID ) {
 		$wc      = new WooCommerceApi( $orderID );
 		$message = $wc->getBillingDetails( self::getTemplate() );
-		$this->telegram->sendMessage( $message );
+		$this->requesterInstance->request( $message );
 	}
 
 	private static function getTemplate() {
-		return str_replace( [
-			"billing_first_name",
-			"billing_last_name",
-			"billing_address_1",
-			"billing_address_2",
-			"billing_city",
-			"billing_state",
-			"billing_postcode",
-			"billing_email",
-			"billing_phone"
-		], [
-			"billing-first_name",
-			"billing-last_name",
-			"billing-address_1",
-			"billing-address_2",
-			"billing-city",
-			"billing-state",
-			"billing-postcode",
-			"billing-email",
-			"billing-phone"
-		], get_option( 'onftb_setting_template' ) );
+		return get_option( 'onftb_setting_template' );
 	}
 
 	public function woocommerce_new_order( $order_id ) {
@@ -110,11 +97,11 @@ class Init extends ViSingleton {
 		$order    = wc_get_order( $order_id );
 		$statuses = get_option( 'onftb_order_statuses' );
 		if ( in_array( 'wc-' . $order->get_status(), $statuses ) ) {
-			$this->sendNewOrderToTelegram( $order->data['id'] );
+			$this->sendNewOrderToTelegram( $order->get_id() );
 		}
 	}
 
-	public function addWooSettingSection( $settings ) {
+	public function addWooCammerceSettingSection( $settings ) {
 		$settings[] = new OptionPanel();
 
 		return $settings;
